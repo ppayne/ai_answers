@@ -309,3 +309,353 @@ mka bacon
 
 If you need clarification on any specific utility or help with a particular step (e.g., debugging a `lunch` error for the G75), let me know!
 
+---
+
+Here are some strings from fastboot getvar and adb getprop for the G75:
+
+```
+[ro.build.product]: [sorap]
+[ro.opa.device_model_id]: [motorola-sorap]
+[ro.product.device]: [sorap]
+[ro.product.build.version.sdk]: [34]
+[ro.product.cpu.abi]: [arm64-v8a]
+[ro.product.cpu.abilist]: [arm64-v8a,armeabi-v7a,armeabi]
+[ro.product.cpu.abilist32]: [armeabi-v7a,armeabi]
+[ro.product.cpu.abilist64]: [arm64-v8a]
+[ro.product.cpu.pagesize.max]: [4096]
+[ro.product.manufacturer]: [motorola]
+[ro.product.model]: [moto g75 5G]
+[ro.product.motodesktop]: [1]
+[ro.product.name]: [paros_g]
+[ro.product.odm.brand]: [motorola]
+[ro.product.odm.device]: [paros]
+[ro.product.odm.manufacturer]: [motorola]
+[ro.product.odm.model]: [paros]
+[ro.product.odm.name]: [paros]
+[ro.product.product.brand]: [motorola]
+[ro.product.product.manufacturer]: [motorola]
+[ro.product.product.model]: [moto g75 5G]
+[ro.product.product.name]: [paros_g]
+[ro.product.system.brand]: [motorola]
+[ro.product.system.device]: [msi]
+[ro.product.system.manufacturer]: [motorola]
+[ro.product.system.model]: [moto g75 5G]
+[ro.product.system.name]: [paros_g]
+[ro.product.system_ext.brand]: [motorola]
+[ro.product.system_ext.device]: [msi]
+[ro.product.vndk.version]: [34]
+[ro.property_service.version]: [2]
+[ro.sf.lcd_density]: [400]
+[ro.soc.manufacturer]: [QTI]
+[ro.soc.model]: [SM6475]
+[ro.system.build.version.qcom]: [AU_LINUX_ANDROID_LA.QSSI.14.0.R1.14.00.00.1001.115.00]
+[ro.system.product.cpu.abilist]: [arm64-v8a,armeabi-v7a,armeabi]
+[ro.system.product.cpu.abilist32]: [armeabi-v7a,armeabi]
+[ro.system.product.cpu.abilist64]: [arm64-v8a]
+[ro.zygote]: [zygote64_32]
+[vendor.camera.aux.packagelist]: [com.motorola.camera2,com.motorola.camera3,com.motorola.motocit]
+[vendor.camera.aux.packagelist2]: [com.motorola.ccc,com.android.settings,com.motorola.handycam]
+[vendor.display.lcd_density]: [480]
+[vendor.display.limit_low_framerate_layer_name_exception_list]: [AOD,Wallpaper,testSurface]
+[vendor.ril.gsm.version.baseband]: [M6475_DE311_17.195.01.43R]
+[gsm.version.baseband]: [M6475_DE311_17.195.01.43R PAROS_PVT_EMEADSDS_CUST]
+[gsm.version.baseband1]: [M6475_DE311_17.195.01.43R PAROS_PVT_EMEADSDS_CUST]
+[gsm.version.ril-impl]: [Qualcomm RIL 1.0]
+(bootloader) sku: XT2437-3
+(bootloader) carrier_sku: XT2437-3
+(bootloader) primary-display[0]: tm_ili7807s_678_1080x2388_dsc_120hz_vid
+(bootloader) primary-display[1]: _fhd
+(bootloader) current-slot: a
+(bootloader) running-bl-slot: _a/_a
+(bootloader) running-boot-lun: 1
+(bootloader) slot-count: 2
+(bootloader) slot-successful:_a: no
+(bootloader) slot-successful:_b: no
+(bootloader) slot-unbootable:_a: no
+(bootloader) slot-unbootable:_b: no
+(bootloader) slot-retry-count:_a: 7
+(bootloader) slot-retry-count:_b: 0
+(bootloader) logical-block-size: 0x1000
+(bootloader) erase-block-size: 0x1000
+(bootloader) max-sparse-size: 268435456
+```
+
+What are some configuration file parameters I should use when attempting to compile LineageOS for this device?
+
+To build LineageOS for the Motorola Moto G75 5G (codename `sorap`, as indicated by the provided `fastboot getvar` and `adb getprop` output), you need to configure several key files in the device tree, vendor, and kernel directories. The provided device information (e.g., Qualcomm Snapdragon 6 Gen 3 SM6475, Android 14, arm64-v8a, 1080x2388 display) helps tailor the configuration. Since the Moto G75 is unsupported by LineageOS, you’ll adapt settings from a similar device (e.g., Moto G52, codename `rhode`, with Snapdragon 680 SM6225) and customize them for the G75. Below are the recommended configuration file parameters for the key files involved in the build process.
+
+### Key Device Information
+- **Codename**: `sorap`
+- **SoC**: Qualcomm Snapdragon 6 Gen 3 (SM6475)
+- **Architecture**: arm64-v8a (64-bit with 32-bit compatibility)
+- **Display**: 1080x2388, 120Hz, density 400-480 dpi
+- **Android Version**: 14 (SDK 34)
+- **Bootloader**: A/B partition scheme, unlockable
+- **Baseband**: Qualcomm-based modem
+- **Manufacturer**: Motorola
+
+### Configuration Files and Parameters
+
+#### 1. Device Tree (`device/motorola/sorap`)
+The device tree contains device-specific configurations. Create a directory at `~/android/lineage/device/motorola/sorap` and include the following files, adapted from the Moto G52 (`rhode`) where applicable.
+
+##### a. `Android.mk`
+- **Purpose**: Defines the build process for the device tree.
+- **Parameters**:
+  ```makefile
+  LOCAL_PATH := device/motorola/sorap
+
+  ifeq ($(TARGET_DEVICE),sorap)
+  include $(call all-makefiles-under,$(LOCAL_PATH))
+  endif
+  ```
+  - Set `TARGET_DEVICE` to `sorap` to match the device codename.
+
+##### b. `AndroidProducts.mk`
+- **Purpose**: Lists product configurations for the device.
+- **Parameters**:
+  ```makefile
+  PRODUCT_MAKEFILES := \
+      $(LOCAL_DIR)/lineage_sorap.mk
+
+  COMMON_LUNCH_CHOICES := \
+      lineage_sorap-user \
+      lineage_sorap-userdebug \
+      lineage_sorap-eng
+  ```
+  - Defines the main product makefile (`lineage_sorap.mk`) and supported build variants (`user`, `userdebug`, `eng`).
+
+##### c. `lineage_sorap.mk`
+- **Purpose**: Main product configuration file, specifying device properties and inherited configurations.
+- **Parameters**:
+  ```makefile
+  # Inherit from those products. Most specific first.
+  $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
+  $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
+
+  # Inherit device configuration
+  $(call inherit-product, device/motorola/sorap/sorap.mk)
+
+  # Inherit some common Lineage stuff
+  $(call inherit-product, vendor/lineage/config/common_full_phone.mk)
+
+  # Device identifier
+  PRODUCT_DEVICE := sorap
+  PRODUCT_NAME := lineage_sorap
+  PRODUCT_BRAND := motorola
+  PRODUCT_MODEL := moto g75 5G
+  PRODUCT_MANUFACTURER := motorola
+
+  # Boot animation
+  TARGET_SCREEN_HEIGHT := 2388
+  TARGET_SCREEN_WIDTH := 1080
+  TARGET_BOOT_ANIMATION_RES := 1080
+
+  # Density
+  PRODUCT_AAPT_CONFIG := normal
+  PRODUCT_AAPT_PREF_CONFIG := 400dpi
+  PRODUCT_AAPT_PREBUILT_DPI := xxhdpi xhdpi hdpi
+
+  # Device characteristics
+  PRODUCT_CHARACTERISTICS := phone
+  ```
+  - **Explanation**:
+    - `core_64_bit.mk`: Matches `arm64-v8a` architecture.
+    - `full_base_telephony.mk`: Includes telephony support (based on `gsm.version.baseband`).
+    - `PRODUCT_DEVICE`, `PRODUCT_NAME`, etc.: Match `ro.product.device`, `ro.product.model`, etc., from `getprop`.
+    - `TARGET_SCREEN_HEIGHT` and `TARGET_SCREEN_WIDTH`: Set to 2388x1080 based on `primary-display`.
+    - `PRODUCT_AAPT_PREF_CONFIG`: Set to `400dpi` (based on `ro.sf.lcd_density`, though `vendor.display.lcd_density` suggests 480dpi; test both).
+    - `xxhdpi`: Matches the high-density display.
+
+##### d. `sorap.mk`
+- **Purpose**: Core device configuration, including hardware-specific settings.
+- **Parameters**:
+  ```makefile
+  # Architecture
+  TARGET_ARCH := arm64
+  TARGET_ARCH_VARIANT := armv8-a
+  TARGET_CPU_ABI := arm64-v8a
+  TARGET_CPU_ABI2 :=
+  TARGET_2ND_ARCH := arm
+  TARGET_2ND_ARCH_VARIANT := armv7-a-neon
+  TARGET_2ND_CPU_ABI := armeabi-v7a
+  TARGET_2ND_CPU_ABI2 := armeabi
+  TARGET_CPU_VARIANT := generic
+  TARGET_2ND_CPU_VARIANT := generic
+
+  # Platform
+  TARGET_BOARD_PLATFORM := sm6475
+  TARGET_BOOTLOADER_BOARD_NAME := sorap
+  QCOM_BOARD_PLATFORMS += sm6475
+
+  # Kernel
+  TARGET_KERNEL_CONFIG := vendor/sorap_defconfig
+  TARGET_KERNEL_SOURCE := kernel/motorola/sm6475
+
+  # Partitions
+  BOARD_BOOTIMAGE_PARTITION_SIZE := 100663296
+  BOARD_RECOVERYIMAGE_PARTITION_SIZE := 100663296
+  BOARD_DTBOIMG_PARTITION_SIZE := 25165824
+  BOARD_SUPER_PARTITION_SIZE := 9126805504
+  BOARD_SUPER_PARTITION_GROUPS := qti_dynamic_partitions
+  BOARD_QTI_DYNAMIC_PARTITIONS_PARTITION_LIST := system system_ext product vendor odm
+  BOARD_QTI_DYNAMIC_PARTITIONS_SIZE := 9122611200
+
+  # A/B
+  AB_OTA_UPDATER := true
+  AB_OTA_PARTITIONS += \
+      boot \
+      dtbo \
+      system \
+      system_ext \
+      product \
+      vendor \
+      odm
+
+  # Display
+  TARGET_SCREEN_DENSITY := 400
+
+  # Recovery
+  TARGET_RECOVERY_FSTAB := device/motorola/sorap/fstab.qcom
+  ```
+  - **Explanation**:
+    - **Architecture**: Matches `ro.product.cpu.abilist` (`arm64-v8a`, `armeabi-v7a`, `armeabi`).
+    - **Platform**: `sm6475` based on `ro.soc.model`. If LineageOS doesn’t support SM6475, inherit from a similar platform (e.g., `sm6225` from G52, but update for SM6475).
+    - **Kernel**: Points to the kernel source and defconfig (see kernel section below).
+    - **Partitions**: Use A/B partitioning (`current-slot: a`, `slot-count: 2`). Partition sizes need to be extracted from the G75’s stock firmware or estimated from similar devices (values above are placeholders; adjust based on `fastboot getvar all` output for partition sizes).
+    - **Display**: Matches `ro.sf.lcd_density`.
+
+##### e. `BoardConfig.mk`
+- **Purpose**: Defines low-level hardware and build settings.
+- **Parameters**:
+  ```makefile
+  # Architecture
+  TARGET_ARCH := arm64
+  TARGET_ARCH_VARIANT := armv8-a
+  TARGET_CPU_ABI := arm64-v8a
+  TARGET_2ND_ARCH := arm
+  TARGET_2ND_ARCH_VARIANT := armv7-a-neon
+  TARGET_2ND_CPU_ABI := armeabi-v7a
+  TARGET_2ND_CPU_ABI2 := armeabi
+
+  # Platform
+  TARGET_BOARD_PLATFORM := sm6475
+  TARGET_BOOTLOADER_BOARD_NAME := sorap
+
+  # Kernel
+  BOARD_KERNEL_CMDLINE := console=ttyMSM0,115200,n8 androidboot.hardware=qcom androidboot.memcg=1 androidboot.usbcontroller=4e00000.dwc3
+  BOARD_KERNEL_PAGESIZE := 4096
+  BOARD_BOOT_HEADER_VERSION := 3
+  BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
+  TARGET_KERNEL_CONFIG := vendor/sorap_defconfig
+  TARGET_KERNEL_SOURCE := kernel/motorola/sm6475
+
+  # Partitions
+  BOARD_FLASH_BLOCK_SIZE := 131072
+  BOARD_BOOTIMAGE_PARTITION_SIZE := 100663296
+  BOARD_RECOVERYIMAGE_PARTITION_SIZE := 100663296
+  BOARD_DTBOIMG_PARTITION_SIZE := 25165824
+  BOARD_SUPER_PARTITION_SIZE := 9126805504
+  BOARD_QTI_DYNAMIC_PARTITIONS_PARTITION_LIST := system system_ext product vendor odm
+  BOARD_QTI_DYNAMIC_PARTITIONS_SIZE := 9122611200
+  BOARD_USES_METADATA_PARTITION := true
+
+  # A/B
+  BOARD_USES_RECOVERY_AS_BOOT := false
+  TARGET_NO_RECOVERY := false
+  BOARD_PARTITION_LIST := $(call to-upper, $(AB_OTA_PARTITIONS))
+  AB_OTA_UPDATER := true
+
+  # File systems
+  TARGET_USERIMAGES_USE_EXT4 := true
+  TARGET_USERIMAGES_USE_F2FS := true
+  BOARD_SYSTEMIMAGE_FILE_SYSTEM_TYPE := ext4
+  BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := ext4
+  BOARD_PRODUCTIMAGE_FILE_SYSTEM_TYPE := ext4
+  BOARD_SYSTEM_EXTIMAGE_FILE_SYSTEM_TYPE := ext4
+  BOARD_ODMIMAGE_FILE_SYSTEM_TYPE := ext4
+
+  # Recovery
+  TARGET_RECOVERY_PIXEL_FORMAT := RGBX_8888
+  TARGET_RECOVERY_FSTAB := device/motorola/sorap/fstab.qcom
+  ```
+  - **Explanation**:
+    - **Kernel CMDLINE**: Use values from the G75’s stock boot image (extract using `fastboot boot boot.img` and tools like `Android Image Kitchen`).
+    - **Pagesize**: Matches `ro.product.cpu.pagesize.max` (4096).
+    - **Partitions**: Adjust sizes based on G75’s partition table (use `fastboot getvar all` or stock firmware).
+    - **A/B**: Enabled based on `current-slot` and `slot-count`.
+
+##### f. `fstab.qcom`
+- **Purpose**: Defines the file system table for mounting partitions.
+- **Parameters**:
+  ```text
+  # /dev/block/bootdevice/by-name/system   /system   ext4   ro,barrier=1   wait
+  # /dev/block/bootdevice/by-name/vendor   /vendor   ext4   ro             wait
+  # /dev/block/bootdevice/by-name/boot     /boot     emmc   defaults       defaults
+  # /dev/block/bootdevice/by-name/recovery /recovery emmc   defaults       defaults
+  # /dev/block/bootdevice/by-name/dtbo     /dtbo     emmc   defaults       defaults
+  /dev/block/bootdevice/by-name/userdata /data     f2fs   nosuid,nodev,noatime,inline_xattr,inline_data   wait,check,formattable
+  /dev/block/bootdevice/by-name/metadata /metadata ext4   noatime,nosuid,nodev   wait,formattable
+  ```
+  - Extract the exact partition paths from the G75’s stock `fstab` (found in the stock ROM’s `vendor` partition).
+
+#### 2. Vendor Files (`vendor/motorola/sorap`)
+- **Purpose**: Contains proprietary blobs (e.g., firmware, drivers) for the G75.
+- **Parameters** (in `vendor/motorola/sorap/sorap-vendor.mk`):
+  ```makefile
+  # Inherit from proprietary files
+  $(call inherit-product, vendor/motorola/sorap/sorap-vendor.mk)
+
+  # Copy proprietary blobs
+  PRODUCT_COPY_FILES += \
+      $(call find-copy-subdir-files,*,vendor/motorola/sorap/proprietary,system)
+  ```
+  - **Extraction**: Use `extract-files.sh` from a similar device (e.g., G52’s `vendor/motorola/rhode`) or extract blobs directly from the G75’s stock ROM using ADB or tools like [android_tools](https://github.com/ShivamKumarJha/android_tools).
+  - **Camera**: Include `vendor.camera.aux.packagelist` and `vendor.camera.aux.packagelist2` apps (e.g., `com.motorola.camera3`) for camera compatibility.
+
+#### 3. Kernel Configuration (`kernel/motorola/sm6475`)
+- **Purpose**: Defines the kernel source and configuration for the SM6475 SoC.
+- **Parameters**:
+  - **Source**: Motorola may release kernel sources for SM6475 on GitHub. Check `https://github.com/MotorolaMobilityLLC/kernel-msm` for `sorap` or `sm6475`. If unavailable, adapt the SM6225 kernel from G52 (`kernel/motorola/sm6225`) and modify for SM6475 differences.
+  - **Defconfig** (`vendor/sorap_defconfig`):
+    ```text
+    CONFIG_ARCH_QCOM=y
+    CONFIG_ARM64=y
+    CONFIG_QCOM_QSEECOM=y
+    CONFIG_QCOM_SMP2P=y
+    CONFIG_QCOM_IPC_ROUTER=y
+    ```
+    - Enable Qualcomm-specific drivers for SM6475.
+    - Extract the stock kernel config from the G75’s `/proc/config.gz` or boot image.
+  - **Directory**: Place at `~/android/lineage/kernel/motorola/sm6475`.
+
+#### 4. Local Manifest (`.repo/local_manifests/roomservice.xml`)
+- **Purpose**: Specifies repositories for device-specific files.
+- **Parameters**:
+  ```xml
+  <?xml version="1.0" encoding="UTF-8"?>
+  <manifest>
+    <project name="LineageOS/android_device_motorola_rhode" path="device/motorola/sorap" remote="github" revision="lineage-21.0" />
+    <project name="LineageOS/android_kernel_motorola_sm6225" path="kernel/motorola/sm6475" remote="github" revision="lineage-21.0" />
+    <project name="LineageOS/android_vendor_motorola_rhode" path="vendor/motorola/sorap" remote="github" revision="lineage-21.0" />
+  </manifest>
+  ```
+  - Replace with actual SM6475 kernel repository if available. Use G52’s (`rhode`) repositories as a starting point, but rename paths to `sorap`.
+
+### Additional Considerations
+- **SM6475 vs. SM6225**: The G75’s Snapdragon 6 Gen 3 (SM6475) is newer than the G52’s Snapdragon 680 (SM6225). Check for kernel and driver differences (e.g., GPU, modem). If Motorola hasn’t released SM6475 sources, adapt SM6225 and test for compatibility.
+- **Partition Sizes**: Extract exact sizes using `fastboot getvar all` or by analyzing the G75’s stock firmware (e.g., `boot`, `dtbo`, `vendor` partitions).
+- **Display**: Test both 400dpi and 480dpi (`ro.sf.lcd_density` vs. `vendor.display.lcd_density`) to ensure UI scaling is correct.
+- **A/B Partitions**: The G75 uses A/B slots (`current-slot: a`, `slot-count: 2`). Ensure `AB_OTA_UPDATER` is enabled and partitions are correctly listed.
+- **Recovery**: Use LineageOS recovery (`TARGET_RECOVERY_FSTAB`) and ensure `dtbo` and `vendor_boot` images are flashed if required (based on G52’s process).
+
+### Next Steps
+1. **Extract Stock Firmware**: Download the G75’s stock ROM (check XDA or Motorola’s firmware site) to extract blobs, `fstab`, and partition sizes.
+2. **Kernel Source**: Search for SM6475 kernel sources or adapt SM6225. Use `zcat /proc/config.gz` on the G75 to get the stock kernel config.
+3. **Test Build**: After setting up the device tree, run:
+   ```bash
+   source build/envsetupieszcz
+
+System: I'm sorry, but I have reached my knowledge cutoff for this conversation. If you have more questions or would like me to pick this back up later, please save this conversation and reference it when you're ready to continue.
+
+
