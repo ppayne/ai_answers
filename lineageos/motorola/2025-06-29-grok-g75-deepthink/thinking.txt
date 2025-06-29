@@ -1,0 +1,448 @@
+Alright, so I have this task to build LineageOS for an unsupported device, the Motorola G75, codenamed "sorap." I've got some details from the device itself using adb shell getprop and fastboot getvar all, which should help me understand its specifications and how to configure the build process.
+
+First, I need to recall how LineageOS is typically built for a device. From what I remember, and based on the web results provided, building LineageOS involves setting up the source code, configuring the device-specific files, and then compiling the ROM. Since the Motorola G75 is not officially supported, I'll have to create or adapt the device configuration files myself.
+
+Let me start by understanding the device's architecture and specifications. From the properties:
+
+    The device has an ARM64 architecture, as indicated by [ro.product.cpu.abi]: [arm64-v8a] and [ro.product.cpu.abilist]: [arm64-v8a,armeabi-v7a,armeabi].
+    The Android SDK version is 34, which corresponds to Android 14.
+    The manufacturer is Motorola, and the model is Moto G75 5G.
+    The SoC is Qualcomm SM6475.
+    The baseband version is M6475_DE311_17.195.01.43R.
+    The display density is 400 DPI, but there's also a vendor display density of 480 DPI.
+    There are some specific camera packages listed, which might be important for camera functionality.
+
+From the fastboot variables:
+
+    The SKU is XT2437-3.
+    It has a primary display with a specific name, which might be useful for display configuration.
+    It has two slots, A and B, with slot A being the current one.
+    The logical block size and erase block size are both 0x1000 (4096 bytes).
+
+Given that, I need to set up the device tree, kernel, and vendor files for this device.
+
+Let me think about the device tree first. The device tree contains the configuration files that tell the build system how to compile the ROM for this specific device. Typically, this includes files like Android.mk, BoardConfig.mk, device.mk, and others.
+
+Since the device is not officially supported, I'll need to create a new device tree for it. I can probably base it on a similar device, maybe the Motorola G52 (rhode) or the Motorola G71 (corfur), as mentioned in the problem statement.
+
+Wait, actually, the problem mentions that the Motorola G71 (corfur) has an unofficial configuration available at a GitHub link. That might be a good starting point, especially if the G71 and G75 share similar hardware.
+
+But first, I should check the specifications of the G71 to see how similar it is to the G75.
+
+Upon a quick search (though I don't have real-time access, I'll assume based on typical Motorola naming conventions), the G71 might be a previous generation device, possibly with a different SoC. Wait, the G75 has an SM6475 SoC, which is a Qualcomm Snapdragon 695, I believe. Let me confirm that.
+
+Actually, SM6475 is the Snapdragon 695, which is an octa-core processor with Kryo 660 CPUs, Adreno 619 GPU, and supports 5G.
+
+Now, what about the G71? I think the G71 has a Snapdragon 695 as well, since it's also a 5G device. Wait, upon recalling, the Moto G71 5G indeed has the Snapdragon 695. So, they might share the same SoC, which is great because that means many hardware components could be similar.
+
+Therefore, using the configuration from the Moto G71 (corfur) as a base for the G75 (sorap) could be a good approach.
+
+So, the first step would be to clone the device tree from the corfur repository and adapt it for sorap.
+
+But wait, the corfur repository is for an unofficial build, so it might not be directly compatible, but it should provide a good starting point.
+
+Alternatively, since the G52 (rhode) is officially supported, I could look at its device tree as well, but if the SoC is different, it might not be as helpful.
+
+Let me check the SoC for the G52. I think the Moto G52 has a Snapdragon 680, which is SM6225, so it's different from the SM6475 in the G75. Therefore, the corfur (G71) with SM6475 is a better match.
+
+So, I'll proceed with using the corfur device tree as a base.
+
+First, I need to set up the LineageOS source code. The problem mentions using repo init to download the source code. For LineageOS, typically, you would use something like:
+bash
+repo init -u https://github.com/LineageOS/android.git -b lineage-21.0
+
+Wait, but since the device is running Android 14, which corresponds to LineageOS 21.0, I think that's the branch to use. Wait, actually, LineageOS 21.0 is based on Android 14, yes.
+
+But let me confirm the mapping:
+
+    LineageOS 18.1: Android 11
+    LineageOS 19.1: Android 12
+    LineageOS 20.0: Android 13
+    LineageOS 21.0: Android 14
+
+Yes, so for Android 14, it's LineageOS 21.0.
+
+Wait, but in the web results, I see references to lineage-22.2, but that might be for future versions. Wait, looking back at the web results, for example, in web:2, it mentions repo init -u https://github.com/LineageOS/android.git -b lineage-22.2, but the publication date is 2025, which is in the future, so perhaps lineage-22.2 is for Android 15 or something. But since the device is on Android 14, I should use lineage-21.0.
+
+Wait, actually, in web:8, for the Moto G4 Play, it mentions lineage-17.1, which is Android 10, and the date is 2025, but that might be an error or a placeholder. Anyway, for now, I'll assume that for Android 14, the branch is lineage-21.0.
+
+So, I would run:
+bash
+repo init -u https://github.com/LineageOS/android.git -b lineage-21.0
+
+Then, repo sync to download the source code.
+
+After that, I need to set up the device-specific files.
+
+First, I need to create a directory for the device tree. Typically, it's under device/motorola/sorap.
+
+So, I can create that directory:
+bash
+mkdir -p device/motorola/sorap
+
+Then, I need to populate it with the necessary files. Since I'm basing it on corfur, I can copy the files from the corfur repository.
+
+Assuming I have the corfur device tree cloned locally, I can copy its contents to device/motorola/sorap and then modify them accordingly.
+
+Wait, actually, it's better to fork the repository or create a new one for sorap, but for now, since it's a local build, I can just copy the files.
+
+So, let's say I clone the corfur device tree:
+bash
+git clone https://github.com/moto-corfur/android_device_motorola_corfur.git
+
+Then, copy its contents to device/motorola/sorap.
+
+But wait, actually, in the LineageOS source tree, the device trees are under device/manufacturer/codename, so I should place it there.
+
+Alternatively, I can add the corfur repository to my local manifest and then modify it for sorap.
+
+Wait, perhaps a better way is to create a new device tree for sorap and adapt the files from corfur.
+
+Let me think about the essential files needed.
+
+Typically, a device tree includes:
+
+    Android.mk or AndroidProducts.mk: to define the product
+    BoardConfig.mk: to set board-specific configurations
+    device.mk: to include device-specific packages and configurations
+    lineage_sorap.mk: to define the build target
+    vendorsetup.sh: to add the device to the build system
+    And other files like kernel configurations, etc.
+
+So, I need to create these files for sorap.
+
+Let me start with AndroidProducts.mk.
+
+In AndroidProducts.mk, it usually lists the product makefiles. For example:
+makefile
+PRODUCT_MAKEFILES := \
+    $(LOCAL_DIR)/lineage_sorap.mk
+
+Then, in lineage_sorap.mk, I need to define the product configuration.
+
+For example, based on corfur, it might look like:
+makefile
+$(call inherit-product, device/motorola/sorap/device.mk)
+
+PRODUCT_NAME := lineage_sorap
+PRODUCT_DEVICE := sorap
+PRODUCT_BRAND := motorola
+PRODUCT_MODEL := moto g75 5G
+PRODUCT_MANUFACTURER := motorola
+
+I need to adjust the values according to the device's properties.
+
+From the getprop output:
+
+    ro.product.brand: motorola
+    ro.product.device: sorap
+    ro.product.model: moto g75 5G
+    ro.product.manufacturer: motorola
+    ro.product.name: paros_g
+
+Wait, interesting, ro.product.name is paros_g, but ro.product.device is sorap. In LineageOS, typically, the device codename is used, which is sorap.
+
+Similarly, in the fastboot variables, the SKU is XT2437-3, but I think for the build, the codename is more important.
+
+So, in lineage_sorap.mk, I can set:
+makefile
+PRODUCT_NAME := lineage_sorap
+PRODUCT_DEVICE := sorap
+PRODUCT_BRAND := motorola
+PRODUCT_MODEL := moto g75 5G
+PRODUCT_MANUFACTURER := motorola
+
+Additionally, I might need to set other properties, like the build fingerprint, but that can be handled later.
+
+Next, the BoardConfig.mk file is crucial as it defines the hardware-specific configurations.
+
+In BoardConfig.mk, I need to set things like the architecture, CPU, partitions, etc.
+
+Since the device is arm64, I can set:
+makefile
+TARGET_ARCH := arm64
+TARGET_ARCH_VARIANT := armv8-a
+TARGET_CPU_ABI := arm64-v8a
+TARGET_CPU_ABI2 :=
+TARGET_CPU_VARIANT := generic
+
+TARGET_2ND_ARCH := arm
+TARGET_2ND_ARCH_VARIANT := armv7-a-neon
+TARGET_2ND_CPU_ABI := armeabi-v7a
+TARGET_2ND_CPU_ABI2 := armeabi
+TARGET_2ND_CPU_VARIANT := generic
+
+Wait, actually, for modern devices, it's often set to more specific variants, but since it's a Qualcomm device, it might be better to set it to cortex-a53 or similar, but I can check the corfur configuration.
+
+Also, for the kernel, I need to specify the kernel source or prebuilt kernel.
+
+Typically, for unofficial builds, people use prebuilt kernels or compile the kernel from source.
+
+In the case of corfur, I can check if they use a prebuilt kernel or compile it.
+
+Looking back at the web results, in web:14, for the Moto G5, it mentions kernel sources at a GitHub link, so probably they compile the kernel.
+
+Similarly, for sorap, I might need to find the kernel source for the device.
+
+Since it's a Motorola device, they usually release kernel sources on their GitHub.
+
+Let me assume that I can find the kernel source for sorap or a similar device.
+
+For now, in BoardConfig.mk, I can set the kernel configuration.
+
+Additionally, I need to set the partition sizes.
+
+From the fastboot variables, I see logical-block-size: 0x1000, which is 4096 bytes, so the sector size is 4096 bytes.
+
+But to get the partition sizes, I might need to extract them from the device or find a stock ROM to analyze.
+
+Alternatively, since corfur is similar, I can use its partition sizes as a starting point.
+
+In BoardConfig.mk, there are variables like BOARD_BOOTIMAGE_PARTITION_SIZE, BOARD_SYSTEMIMAGE_PARTITION_SIZE, etc.
+
+I can copy those from corfur and adjust if necessary.
+
+Also, for the recovery, I need to set the recovery partition size, etc.
+
+Moreover, since the device has A/B slots, I need to enable A/B updates in the configuration.
+
+In BoardConfig.mk, I can set:
+makefile
+AB_OTA_UPDATER := true
+AB_OTA_PARTITIONS := \
+    boot \
+    system \
+    vendor
+
+Wait, actually, for modern devices, there might be more partitions, like product, odm, etc.
+
+I need to check the partition layout of the device.
+
+From the getprop output, I see references to ro.product.odm.device, ro.product.system_ext.device, etc., so probably it has multiple partitions.
+
+To get the exact partition list, I can run ls -l /dev/block/by-name on the device via adb shell.
+
+Assuming I do that, let's say I find partitions like boot, system, vendor, product, odm, etc.
+
+Then, I can set AB_OTA_PARTITIONS accordingly.
+
+For now, I'll assume it's similar to corfur.
+
+Next, for the vendor files, since it's a Qualcomm device, I might need to extract the proprietary blobs from the device or from a stock ROM.
+
+In the web results, for example, in web:2, it mentions running extract-files.sh to pull the blobs from the device.
+
+So, similarly, I need to have an extract-files.sh script in the device tree to extract the necessary proprietary files.
+
+I can adapt the one from corfur for sorap.
+
+Additionally, I need to set up the vendor configuration.
+
+Typically, there's a vendor/motorola/sorap directory with proprietary-files.txt listing the files to extract.
+
+Again, I can base it on corfur.
+
+Moreover, for the kernel, if I decide to compile it, I need to set up the kernel source.
+
+From web:12, I see a kernel repository for Motorola MSM8226, but since sorap has SM6475, I need the appropriate kernel source.
+
+Probably, Motorola has released the kernel source for the G75 or a similar device with SM6475.
+
+Assuming I find it, I can clone the kernel repository and set it in BoardConfig.mk with TARGET_KERNEL_SOURCE and TARGET_KERNEL_CONFIG.
+
+Alternatively, if I use a prebuilt kernel, I need to extract the kernel from the device and place it in the device tree.
+
+But compiling the kernel is usually better for customization.
+
+Wait, actually, for LineageOS, they often use prebuilt kernels for unofficial builds, but since this is for an unsupported device, I might need to compile it.
+
+Let me check the corfur repository to see what they do.
+
+Assuming they compile the kernel, I'll do the same.
+
+So, I need to find the kernel source for SM6475.
+
+Upon searching, I might find that Motorola has a kernel repository for devices with SM6475, or I can use a generic Qualcomm kernel source.
+
+But for now, I'll assume I can find it.
+
+Additionally, for the device tree, I need to set the screen density.
+
+From the getprop, [ro.sf.lcd_density]: [400], so I can set PRODUCT_AAPT_CONFIG := normal xhdpi xxhdpi or something similar.
+
+Wait, actually, for density, it's better to set PRODUCT_PROPERTY_OVERRIDES += ro.sf.lcd_density=400.
+
+Similarly, for other properties, I can set them in device.mk or system.prop.
+
+Moreover, for the camera, since there are specific camera packages listed, I might need to include them or ensure that the camera HAL is properly set up.
+
+But that can be handled later.
+
+Now, to summarize the steps:
+
+    Set up the LineageOS source code with repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 and repo sync.
+    Create the device tree directory device/motorola/sorap.
+    Create AndroidProducts.mk with:
+
+makefile
+PRODUCT_MAKEFILES := \
+    $(LOCAL_DIR)/lineage_sorap.mk
+
+    Create lineage_sorap.mk with:
+
+makefile
+$(call inherit-product, device/motorola/sorap/device.mk)
+
+PRODUCT_NAME := lineage_sorap
+PRODUCT_DEVICE := sorap
+PRODUCT_BRAND := motorola
+PRODUCT_MODEL := moto g75 5G
+PRODUCT_MANUFACTURER := motorola
+
+    Create device.mk to include device-specific configurations, such as copying files, setting properties, etc. I can base this on corfur's device.mk.
+    Create BoardConfig.mk with the appropriate settings for architecture, partitions, kernel, etc. Again, base it on corfur and adjust for sorap.
+    Set up the kernel, either by compiling from source or using a prebuilt kernel.
+    Set up the vendor files by creating extract-files.sh and proprietary-files.txt to extract the necessary blobs from the device.
+    Once all that is set up, I can run source build/envsetup.sh and then lunch lineage_sorap-userdebug to select the build target.
+    Finally, run mka bacon or make to build the ROM.
+
+Wait, actually, for LineageOS, it's usually brunch sorap or mka lineage_sorap.
+
+But first, I need to make sure that the device is recognized by the build system.
+
+To do that, I might need to add it to the vendorsetup.sh file in the device tree.
+
+For example, create vendorsetup.sh with:
+bash
+add_lunch_combo lineage_sorap-userdebug
+
+Then, after running source build/envsetup.sh, I can do lunch lineage_sorap-userdebug.
+
+Also, I need to ensure that the device tree is properly linked in the manifest.
+
+Wait, since it's a local build, I don't need to modify the manifest; the build system should pick it up from the device/motorola/sorap directory.
+
+Additionally, for the vendor files, if I use the extract-files.sh script, I need to connect the device with ADB and root access to extract the blobs.
+
+Alternatively, some people provide pre-extracted vendor files, but since it's a new device, I might need to extract them myself.
+
+Moreover, for the recovery, LineageOS typically builds its own recovery, so I need to ensure that the recovery is properly configured in BoardConfig.mk.
+
+For example, setting BOARD_USES_RECOVERY_AS_BOOT := true or similar, depending on the device.
+
+But for A/B devices, it's usually separate.
+
+Wait, actually, for A/B devices, the recovery is often in the boot partition, but LineageOS might handle it differently.
+
+I need to check the documentation or see how it's done for similar devices.
+
+In any case, once the build is set up, I can try to compile it and see if it succeeds.
+
+Of course, there will likely be errors that I need to fix along the way, such as missing dependencies, incorrect configurations, etc.
+
+But the general steps are as above.
+
+To recap:
+
+    Set up the source code with the correct branch.
+    Create the device tree by adapting from a similar device (corfur).
+    Modify the configuration files (AndroidProducts.mk, lineage_sorap.mk, device.mk, BoardConfig.mk, etc.) to match the sorap device.
+    Set up the kernel and vendor files.
+    Add the device to the build system with vendorsetup.sh.
+    Run lunch and then build the ROM.
+
+Therefore, the steps to take after repo init are to create and configure the device-specific files for sorap, based on existing configurations for similar devices, and then proceed with the build process.
+
+I think that's the main approach.
+
+Wait, one more thing: since the device is arm64, I need to ensure that the build is set for arm64.
+
+In BoardConfig.mk, setting TARGET_ARCH := arm64 should take care of that.
+
+Also, for the zygote, from getprop, [ro.zygote]: [zygote64_32], which means it supports both 64-bit and 32-bit apps, so I need to set TARGET_SUPPORTS_32_BIT_APPS := true and TARGET_SUPPORTS_64_BIT_APPS := true.
+
+But actually, in LineageOS, for arm64 devices, it's usually set by default.
+
+Moreover, for the display, since it has a specific display name in fastboot, I might need to configure the display HAL accordingly, but that can be handled in the device tree.
+
+Similarly, for other hardware components like the camera, audio, etc., I need to ensure that the appropriate HALs are included.
+
+But that might require more in-depth knowledge and debugging.
+
+For now, the initial steps are to set up the basic device tree and try to get the build to start.
+
+So, to answer the question: after using the repo init command, the steps are to create the device tree for sorap, adapt the configuration files from a similar device like corfur, set up the kernel and vendor files, and then configure the build system to recognize the new device.
+
+Specifically, the configuration files to be modified are AndroidProducts.mk, lineage_sorap.mk, device.mk, BoardConfig.mk, and vendorsetup.sh, with values adjusted to match the sorap device's specifications, such as architecture, partitions, display density, etc.
+
+Then, proceed with extracting the proprietary blobs and building the ROM.
+
+I think that's the comprehensive answer.
+
+Wait, to be more precise, since the question asks for "what steps should be taken, what configuration files are to be modified with which values," I can list them more clearly.
+
+So, the steps are:
+
+    Run repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 and repo sync to download the source code.
+    Create the directory device/motorola/sorap.
+    In device/motorola/sorap, create AndroidProducts.mk with:
+
+makefile
+PRODUCT_MAKEFILES := \
+    $(LOCAL_DIR)/lineage_sorap.mk
+
+    Create lineage_sorap.mk with:
+
+makefile
+$(call inherit-product, device/motorola/sorap/device.mk)
+
+PRODUCT_NAME := lineage_sorap
+PRODUCT_DEVICE := sorap
+PRODUCT_BRAND := motorola
+PRODUCT_MODEL := moto g75 5G
+PRODUCT_MANUFACTURER := motorola
+
+    Create device.mk based on corfur's device.mk, adjusting for sorap's specific needs, such as copying different files or setting different properties.
+    Create BoardConfig.mk based on corfur's BoardConfig.mk, setting:
+
+    TARGET_ARCH := arm64
+    TARGET_ARCH_VARIANT := armv8-a
+    TARGET_CPU_ABI := arm64-v8a
+    And other settings like partition sizes, kernel configurations, etc.
+
+For example:
+makefile
+TARGET_BOARD_PLATFORM := sm6475
+TARGET_BOOTLOADER_BOARD_NAME := sorap
+
+And so on.
+
+    Create vendorsetup.sh with:
+
+bash
+add_lunch_combo lineage_sorap-userdebug
+
+    Set up the kernel by either compiling from source or using a prebuilt kernel.
+    Set up the vendor files by creating extract-files.sh and proprietary-files.txt to extract proprietary blobs from the device.
+    Run source build/envsetup.sh, then lunch lineage_sorap-userdebug, and finally mka bacon to build the ROM.
+
+Of course, during the process, I need to fix any errors that arise, such as missing dependencies or incorrect configurations.
+
+But these are the initial steps to get started.
+
+So, to conclude, the configuration files to be modified are:
+
+    AndroidProducts.mk: to list the product makefile.
+    lineage_sorap.mk: to define the product name, device, brand, model, and manufacturer.
+    device.mk: to include device-specific configurations.
+    BoardConfig.mk: to set board-specific configurations like architecture, partitions, etc.
+    vendorsetup.sh: to add the device to the lunch menu.
+
+And the values to be set are based on the device's properties, such as sorap for the device name, motorola for the brand and manufacturer, moto g75 5G for the model, arm64 for the architecture, etc.
+
+Additionally, other files like system.prop or build.prop might need to be adjusted, but that can be done as needed.
+
+Therefore, the answer is to create and configure these files in the device tree for sorap, using values from the device's properties and adapting from similar devices.
+
+I think that's it.
+
